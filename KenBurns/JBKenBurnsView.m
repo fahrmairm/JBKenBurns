@@ -47,11 +47,18 @@ enum JBSourceMode {
 }
 
 @property (nonatomic) int currentImage;
+@property (strong, atomic) NSArray *replacementContent;
 
 @end
 
 
 @implementation JBKenBurnsView
+
+- (void) replaceData:(NSArray *)newContent
+{
+    //for now only replac makes sense. TODO check how to do a lock
+    self.replacementContent=newContent;
+}
 
 - (id)init
 {
@@ -107,6 +114,12 @@ enum JBSourceMode {
 
 - (void)nextImage {
     _currentIndex++;
+    
+    if (self.replacementContent) {
+        _imagesArray = [self.replacementContent mutableCopy];
+        self.replacementContent=nil;
+        _currentIndex=0;
+    }
     
     if (_currentIndex == _imagesArray.count) {
         if (_shouldLoop) {
