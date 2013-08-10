@@ -107,6 +107,33 @@ enum JBSourceMode {
 
 - (void)nextImage {
     _currentIndex++;
+    
+    if (_currentIndex == _imagesArray.count) {
+        if (_shouldLoop) {
+            _currentIndex = 0;
+        }else {
+            if ([[self subviews] count] > 0){
+                __block UIView *oldImageView = [[self subviews] objectAtIndex:0];
+                
+            
+            [UIView transitionWithView:oldImageView
+                              duration:10.0
+                               options:UIViewAnimationOptionBeginFromCurrentState
+                            animations:^{
+                                            oldImageView.alpha=0.0;
+                                        }
+                            completion:^(BOOL finished){
+                                            [oldImageView removeFromSuperview];
+                                            oldImageView = nil;
+                                            if ([_delegate respondsToSelector:@selector(didFinishAllAnimations)])
+                                                [_delegate didFinishAllAnimations];
+                                        }];
+            }
+            [_nextImageTimer invalidate];
+            return;
+        }
+    }
+
 
     UIImage *image = nil;
     switch (_sourceMode) {
@@ -239,14 +266,7 @@ enum JBSourceMode {
 
     [self _notifyDelegate];
 
-    if (_currentIndex == _imagesArray.count - 1) {
-        if (_shouldLoop) {
-            _currentIndex = -1;
-        }else {
-            [_nextImageTimer invalidate];
-        }
-    }
-}
+   }
 
 - (void) _notifyDelegate
 {
@@ -256,9 +276,7 @@ enum JBSourceMode {
             [_delegate didShowImageAtIndex:_currentIndex];
         }      
         
-        if (_currentIndex == ([_imagesArray count] - 1) && !_shouldLoop && [_delegate respondsToSelector:@selector(didFinishAllAnimations)]) {
-            [_delegate didFinishAllAnimations];
-        } 
+        
     }
     
 }
