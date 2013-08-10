@@ -30,7 +30,7 @@
 
 enum JBSourceMode {
     JBSourceModeImages,
-//    JBSourceModeURLs,
+    JBSourceModeURLs,
     JBSourceModePaths
 };
 
@@ -79,6 +79,13 @@ enum JBSourceMode {
     [self _startAnimationsWithData:imagePaths transitionDuration:duration loop:shouldLoop isLandscape:isLandscape];
 }
 
+- (void) animateWithImageUrls:(NSArray *)imagePaths transitionDuration:(float)duration loop:(BOOL)shouldLoop isLandscape:(BOOL)isLandscape
+{
+    _sourceMode = JBSourceModeURLs;
+    [self _startAnimationsWithData:imagePaths transitionDuration:duration loop:shouldLoop isLandscape:isLandscape];
+}
+
+
 - (void) animateWithImages:(NSArray *)images transitionDuration:(float)duration loop:(BOOL)shouldLoop isLandscape:(BOOL)isLandscape {
     _sourceMode = JBSourceModeImages;
     [self _startAnimationsWithData:images transitionDuration:duration loop:shouldLoop isLandscape:isLandscape];
@@ -110,13 +117,16 @@ enum JBSourceMode {
         case JBSourceModePaths:
             image = [UIImage imageWithContentsOfFile:_imagesArray[_currentIndex]];
             break;
+        case JBSourceModeURLs:
+            image = [UIImage imageWithData:[NSData dataWithContentsOfURL:_imagesArray[_currentIndex]]];
+            break;
     }
 
     UIImageView *imageView = nil;
     
     float resizeRatio   = -1;
-    float widthDiff     = -1;
-    float heightDiff    = -1;
+    //float widthDiff     = -1;
+    //float heightDiff    = -1;
     float originX       = -1;
     float originY       = -1;
     float zoomInX       = -1;
@@ -126,61 +136,12 @@ enum JBSourceMode {
     float frameWidth    = _isLandscape ? self.bounds.size.width: self.bounds.size.height;
     float frameHeight   = _isLandscape ? self.bounds.size.height: self.bounds.size.width;
     
-    // Wider than screen 
-    if (image.size.width > frameWidth)
-    {
-        widthDiff  = image.size.width - frameWidth;
-        
-        // Higher than screen
-        if (image.size.height > frameHeight)
-        {
-            heightDiff = image.size.height - frameHeight;
-            
-            if (widthDiff > heightDiff) 
-                resizeRatio = frameHeight / image.size.height;
-            else
-                resizeRatio = frameWidth / image.size.width;
-            
-        // No higher than screen [OK]
-        }
-        else
-        {
-            heightDiff = frameHeight - image.size.height;
-            
-            if (widthDiff > heightDiff) 
-                resizeRatio = frameWidth / image.size.width;
-            else
-                resizeRatio = self.bounds.size.height / image.size.height;
-        }
-        
-    // No wider than screen
-    }
-    else
-    {
-        widthDiff  = frameWidth - image.size.width;
-        
-        // Higher than screen [OK]
-        if (image.size.height > frameHeight)
-        {
-            heightDiff = image.size.height - frameHeight;
-            
-            if (widthDiff > heightDiff) 
-                resizeRatio = image.size.height / frameHeight;
-            else
-                resizeRatio = frameWidth / image.size.width;
-            
-        // No higher than screen [OK]
-        }
-        else
-        {
-            heightDiff = frameHeight - image.size.height;
-            
-            if (widthDiff > heightDiff) 
-                resizeRatio = frameWidth / image.size.width;
-            else
-                resizeRatio = frameHeight / image.size.height;
-        }
-    }
+    //changed resizing logic so that imag always fills screen
+    //the original logic failed for me in case of portrait mode
+    //photos, e.g. 768 width, 1024 height
+    float scaleX=frameWidth/image.size.width;
+    float scaleY=frameHeight/image.size.height;
+    resizeRatio=MAX(scaleX, scaleY);
     
     // Resize the image.
     float optimusWidth  = (image.size.width * resizeRatio) * enlargeRatio;
@@ -192,6 +153,9 @@ enum JBSourceMode {
     float maxMoveX = optimusWidth - frameWidth;
     float maxMoveY = optimusHeight - frameHeight;
     
+    //here is a bug. If you want to use rotation use
+    //float rotation = (float)(arc4random() % 9) / 100;
+    //did not know what working rotation could break so left it unfixed
     float rotation = (arc4random() % 9) / 100;
     
     switch (arc4random() % 4) {
